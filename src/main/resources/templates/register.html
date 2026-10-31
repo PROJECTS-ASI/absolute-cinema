@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Crear cuenta - AbsoluteCinema</title></head>
+<body>
+  <h1>Crea tu cuenta</h1>
+  <form th:action="@{/register}" th:object="${registerForm}" method="post">
+    <label>Nombre <input type="text" th:field="*{name}"></label>
+    <span th:errors="*{name}"></span><br>
+    <label>Apellidos <input type="text" th:field="*{lastName}"></label>
+    <span th:errors="*{lastName}"></span><br>
+    <label>Correo <input type="email" th:field="*{email}"></label>
+    <span th:errors="*{email}"></span><br>
+    <label>Contraseña <input type="password" th:field="*{password}"></label>
+    <span th:errors="*{password}"></span><br>
+    <label>Confirmar contraseña <input type="password" th:field="*{confirmPassword}"></label>
+    <span th:errors="*{confirmPassword}"></span><br>
+    <button type="submit">Crear cuenta</button>
+  </form>
+  <p>¿Ya tienes cuenta? <a th:href="@{/login}">Iniciar sesión</a></p>
+</body>
+</html>

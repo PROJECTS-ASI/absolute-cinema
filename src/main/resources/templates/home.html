@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>AbsoluteCinema</title></head>
+<body>
+  <h1>Sesión iniciada</h1>
+  <p>Hola, <span th:text="${email}"></span></p>
+  <form th:action="@{/logout}" method="post">
+    <button type="submit">Cerrar sesión</button>
+  </form>
+</body>
+</html>   
