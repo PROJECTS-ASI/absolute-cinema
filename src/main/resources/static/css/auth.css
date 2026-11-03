@@ -1,0 +1,58 @@
+/* ---------- Pantallas de acceso (login / registro) ---------- */
+.auth {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 440px 453px;
+  gap: 130px;
+  justify-content: center;
+  align-items: center;
+  padding: 56px 24px;
+}
+
+.auth-poster {
+  height: 660px;
+  border-radius: 14px;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background:
+    linear-gradient(180deg, rgba(15,17,20,.1) 30%, rgba(15,17,20,.92) 100%),
+    url('../img/auth-poster.png') center / cover no-repeat,
+    #0d1524;
+}
+.auth-poster__kicker {
+  display: flex; align-items: center; gap: 12px;
+  margin: 0; font-size: 12px; letter-spacing: .08em;
+}
+.auth-poster__kicker::before {
+  content: ''; width: 22px; height: 2px; background: var(--accent);
+}
+.auth-poster h2 { margin: 0 0 14px; font-size: 38px; font-weight: 300; line-height: 1.1; }
+.auth-poster p { margin: 0; color: var(--muted); font-size: 15px; }
+.auth-poster__meta {
+  display: flex; justify-content: space-between;
+  margin-top: 22px; padding-top: 18px;
+  border-top: 1px solid rgba(255,255,255,.15);
+  font-size: 13px;
+}
+
+/* ---------- Extras del login ---------- */
+.form-options {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 4px 0 22px; font-size: 13px; color: var(--muted);
+}
+.form-options label { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.form-options input { width: 16px; height: 16px; accent-color: var(--accent); }
+.form-options a { color: var(--accent); }
+
+.auth-note {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin: 18px 0 0; font-size: 13px; color: var(--muted);
+}
+
+/* ---------- Pantallas pequeñas ---------- */
+@media (max-width: 1000px) {
+  .auth { grid-template-columns: minmax(0, 453px); gap: 0; }
+  .auth-poster { display: none; }
+}

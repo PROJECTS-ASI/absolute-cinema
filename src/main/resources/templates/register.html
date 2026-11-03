@@ -1,21 +1,104 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>Crear cuenta - AbsoluteCinema</title></head>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Crear cuenta - AbsoluteCinema</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/styles.css}">
+  <link rel="stylesheet" th:href="@{/css/auth.css}">
+</head>
 <body>
-  <h1>Crea tu cuenta</h1>
-  <form th:action="@{/register}" th:object="${registerForm}" method="post">
-    <label>Nombre <input type="text" th:field="*{name}"></label>
-    <span th:errors="*{name}"></span><br>
-    <label>Apellidos <input type="text" th:field="*{lastName}"></label>
-    <span th:errors="*{lastName}"></span><br>
-    <label>Correo <input type="email" th:field="*{email}"></label>
-    <span th:errors="*{email}"></span><br>
-    <label>Contraseña <input type="password" th:field="*{password}"></label>
-    <span th:errors="*{password}"></span><br>
-    <label>Confirmar contraseña <input type="password" th:field="*{confirmPassword}"></label>
-    <span th:errors="*{confirmPassword}"></span><br>
-    <button type="submit">Crear cuenta</button>
-  </form>
-  <p>¿Ya tienes cuenta? <a th:href="@{/login}">Iniciar sesión</a></p>
+  <div th:replace="~{fragments/common :: authHeader}"></div>
+
+  <main class="auth">
+    <section class="auth-poster" aria-hidden="true">
+      <p class="auth-poster__kicker">EL CINE, A TU RITMO.</p>
+      <div>
+        <h2>Tu próxima historia empieza aquí.</h2>
+        <p>Tus películas, tus funciones y tus entradas, en una sola cuenta.</p>
+        <div class="auth-poster__meta">
+          <span>El último horizonte</span>
+          <span>Ciencia ficción · 118 min</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <p class="eyebrow">Tu cuenta AbsoluteCinema</p>
+      <h1>Crea tu cuenta</h1>
+      <p class="card__lead">Regístrate para ingresar a la cartelera y reservar tus entradas.</p>
+
+      <form th:action="@{/register}" th:object="${registerForm}" method="post">
+
+        <div class="field-row">
+          <div class="field">
+            <label for="name">Nombres</label>
+            <input type="text" th:field="*{name}" placeholder="Ingresa tus nombres" autocomplete="given-name">
+            <span class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
+          </div>
+          <div class="field">
+            <label for="lastName">Apellidos</label>
+            <input type="text" th:field="*{lastName}" placeholder="Ingresa tus apellidos" autocomplete="family-name">
+            <span class="field-error" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="email">Correo electrónico</label>
+          <input type="email" th:field="*{email}" placeholder="nombre@ejemplo.com" autocomplete="email">
+          <span class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+        </div>
+
+        <div class="field">
+          <label for="password">Contraseña</label>
+          <div class="password-wrap">
+            <input type="password" th:field="*{password}" placeholder="Crea una contraseña" autocomplete="new-password">
+            <button type="button" class="toggle-password" data-toggle-password="password">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+              <span class="toggle-label">Ver</span>
+            </button>
+          </div>
+          <p class="field-hint">Usa al menos 8 caracteres, una mayúscula y un número.</p>
+          <span class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
+        </div>
+
+        <div class="field">
+          <label for="confirmPassword">Confirmar contraseña</label>
+          <div class="password-wrap">
+            <input type="password" th:field="*{confirmPassword}" placeholder="Vuelve a escribir tu contraseña" autocomplete="new-password">
+            <button type="button" class="toggle-password" data-toggle-password="confirmPassword">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+              <span class="toggle-label">Ver</span>
+            </button>
+          </div>
+          <span class="field-error" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></span>
+        </div>
+
+        <label class="checkbox">
+          <input type="checkbox" required>
+          <span>Acepto los <a href="#">Términos y condiciones</a> y la
+            <a href="#">Política de privacidad</a> de AbsoluteCinema Cine.</span>
+        </label>
+
+        <button type="submit" class="btn-primary">Crear cuenta</button>
+      </form>
+
+      <div class="card__footer">
+        ¿Ya tienes una cuenta? <a th:href="@{/login}">Iniciar sesión</a>
+      </div>
+    </section>
+  </main>
+
+  <div th:replace="~{fragments/common :: footer}"></div>
+  <script th:src="@{/js/auth.js}"></script>
 </body>
 </html>
