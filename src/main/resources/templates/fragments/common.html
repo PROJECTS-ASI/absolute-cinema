@@ -29,6 +29,38 @@
       </nav>
     </div>
   </footer>
+  
+  <th:block th:fragment="head(title, css)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' - AbsoluteCinema'">AbsoluteCinema</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link rel="stylesheet" th:href="@{/css/{name}.css(name=${css})}">
+  </th:block>
+
+  <header th:fragment="mainHeader(active)" class="site-header">
+    <div class="site-header__inner">
+      <div class="site-header__left">
+        <a th:href="@{/}" class="brand">
+          <span class="brand__logo">A</span>
+          <span class="brand__name">AbsoluteCinema</span>
+          <span class="brand__tag">CINE</span>
+        </a>
+        <nav class="main-nav">
+          <a th:href="@{/}" th:classappend="${active == 'catalog'} ? 'is-active'">Cartelera</a>
+        </nav>
+      </div>
+      <div class="site-header__right">
+        <a th:href="@{/profile}" class="main-nav__link" th:classappend="${active == 'profile'} ? 'is-active'">Mi perfil</a>
+        <form th:action="@{/logout}" method="post">
+          <button type="submit" class="link-button">Cerrar sesión</button>
+        </form>
+      </div>
+    </div>
+  </header>
 
 </body>
 </html>
