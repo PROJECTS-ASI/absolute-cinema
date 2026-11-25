@@ -1,10 +1,11 @@
-
 package com.absolutecinema.payment;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,16 +26,19 @@ public class PaymentController {
 
     // Registrar un pago
     @PostMapping
-    public Payment registerPayment(@RequestBody PaymentRequest request) {
+    public ResponseEntity<?> registerPayment(@RequestBody PaymentRequest request) {
         try {
-            return paymentService.registerPayment(
+            Payment payment = paymentService.registerPayment(
                 request.getBookingId(),
                 request.getMethod(),
-                request.getAmount()
+                request.getAmount(),
+                request.getCardBrand()
             );
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST, e.getMessage());
+            return ResponseEntity.ok(payment);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", e.getMessage()));
         }
     }
 
@@ -51,8 +55,7 @@ public class PaymentController {
 
     // Consultar pagos de una reserva
     @GetMapping("/booking/{bookingId}")
-    public List<Payment> findByBooking(
-            @PathVariable Long bookingId) {
+    public List<Payment> findByBooking(@PathVariable Long bookingId) {
         return paymentService.findByBooking(bookingId);
     }
 
@@ -62,12 +65,13 @@ public class PaymentController {
         return paymentService.findAll();
     }
 
-    // Datos que recibe el pago
+    // Datos que recibe el pago (sin datos sensibles de tarjeta)
     public static class PaymentRequest {
 
         private Long bookingId;
         private PaymentMethod method;
         private BigDecimal amount;
+        private String cardBrand;
 
         public Long getBookingId() {
             return bookingId;
@@ -91,6 +95,14 @@ public class PaymentController {
 
         public void setAmount(BigDecimal amount) {
             this.amount = amount;
+        }
+
+        public String getCardBrand() {
+            return cardBrand;
+        }
+
+        public void setCardBrand(String cardBrand) {
+            this.cardBrand = cardBrand;
         }
     }
 }

@@ -1,4 +1,3 @@
-
 package com.absolutecinema.payment;
 
 import java.math.BigDecimal;
@@ -10,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.absolutecinema.booking.Booking;
 import com.absolutecinema.booking.BookingRepository;
+import com.absolutecinema.booking.BookingService;
 import com.absolutecinema.booking.BookingStatus;
 
 @Service
@@ -17,13 +17,23 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
+    private final BookingService bookingService;
 
     public PaymentService(
             PaymentRepository paymentRepository,
-            BookingRepository bookingRepository) {
+            BookingRepository bookingRepository,
+            BookingService bookingService) {
 
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
+        this.bookingService = bookingService;
+    }
+
+    public Payment registerPayment(
+            Long bookingId,
+            PaymentMethod method,
+            BigDecimal amount) {
+        return registerPayment(bookingId, method, amount, null);
     }
 
     // Registrar un nuevo pago
@@ -31,7 +41,8 @@ public class PaymentService {
     public Payment registerPayment(
             Long bookingId,
             PaymentMethod method,
-            BigDecimal amount) {
+            BigDecimal amount,
+            String cardBrand) {
 
         // Validar ID de reserva
         if (bookingId == null) {
@@ -90,23 +101,27 @@ public class PaymentService {
                 "Esta reserva ya tiene un pago registrado");
         }
 
+        // Confirmar la reserva y pasar los asientos LOCKED a SOLD
+        Booking confirmedBooking = bookingService.confirm(bookingId);
+
         // Crear el registro del pago
         Payment payment = new Payment();
 
-        payment.setBooking(booking);
+        payment.setBooking(confirmedBooking);
         payment.setMethod(method);
         payment.setAmount(amount);
         payment.setStatus(PaymentStatus.APPROVED);
         payment.setCreatedAt(LocalDateTime.now());
 
+        if (method == PaymentMethod.CARD && cardBrand != null) {
+            String normalizedBrand = cardBrand.trim().toUpperCase();
+            if ("VISA".equals(normalizedBrand) || "AMEX".equals(normalizedBrand)) {
+                payment.setCardBrand("AMEX".equals(normalizedBrand) ? "American Express" : "Visa");
+            }
+        }
+
         // Guardar el pago
-        Payment savedPayment = paymentRepository.save(payment);
-
-        // Confirmar la reserva
-        booking.setStatus(BookingStatus.CONFIRMED);
-        bookingRepository.save(booking);
-
-        return savedPayment;
+        return paymentRepository.save(payment);
     }
 
     // Buscar pago por identificador
