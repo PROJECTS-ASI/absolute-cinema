@@ -1,4 +1,3 @@
-
 package com.absolutecinema.payment;
 
 import java.math.BigDecimal;
