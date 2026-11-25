@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:insert="~{fragments/common :: head('Funciones', 'catalog')}"></head>
+<body>
+  <div th:replace="~{fragments/common :: mainHeader('catalog')}"></div>
+
+  <main class="catalog">
+    <p class="catalog__crumb">
+      <a th:href="@{/}">CARTELERA</a> /
+      <a th:href="@{/movies/{id}(id=${movie.id})}" th:text="${#strings.toUpperCase(movie.title)}">PELÍCULA</a> /
+      FUNCIONES
+    </p>
+
+    <div class="showtimes-head">
+      <div class="showtimes-head__poster">
+        <img th:src="@{${movie.posterUrl}}" th:alt="'Póster de ' + ${movie.title}">
+      </div>
+      <div>
+        <h1 th:text="${movie.title}">Título</h1>
+        <p class="catalog__lead" th:text="${movie.genre}">Género</p>
+        <p class="movie-card__meta" th:text="|${movie.durationMinutes} min · ${movie.rating}|">118 min · +12</p>
+      </div>
+    </div>
+
+    <p class="catalog__empty" th:if="${#lists.isEmpty(tabs)}">
+      Por ahora no hay funciones programadas para esta película.
+    </p>
+
+    <th:block th:unless="${#lists.isEmpty(tabs)}">
+      <nav class="day-tabs" aria-label="Fechas disponibles">
+        <a class="day-tab" th:each="tab : ${tabs}"
+           th:classappend="${tab.selected()} ? 'is-selected'"
+           th:href="@{/movies/{id}/showtimes(id=${movie.id}, date=${tab.iso()})}">
+          <span class="day-tab__weekday" th:text="${tab.weekday()}">lun</span>
+          <span class="day-tab__day" th:text="${tab.day()}">24</span>
+          <span class="day-tab__month" th:text="${tab.month()}">nov</span>
+        </a>
+      </nav>
+
+      <h2 class="showtimes__date" th:text="${selectedLabel}">martes 24 de noviembre</h2>
+
+      <p class="catalog__empty" th:if="${#lists.isEmpty(showtimes)}">
+        No hay funciones disponibles para este día. Elige otra fecha.
+      </p>
+
+      <ul class="showtime-list" th:unless="${#lists.isEmpty(showtimes)}">
+        <li th:each="st : ${showtimes}">
+          <a class="showtime-card" th:href="@{/showtimes/{id}/seats(id=${st.id()})}">
+            <span class="showtime-card__time" th:text="${st.time()}">20:30</span>
+            <span class="showtime-card__room" th:text="${st.room()}">Sala 01</span>
+            <span class="showtime-card__price" th:text="${st.price()}">S/ 9.00</span>
+            <span class="showtime-card__cta">Elegir asientos →</span>
+          </a>
+        </li>
+      </ul>
+    </th:block>
+  </main>
+
+  <div th:replace="~{fragments/common :: footer}"></div>
+</body>
+</html>

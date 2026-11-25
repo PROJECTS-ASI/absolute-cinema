@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 public interface ShowtimeRepository extends JpaRepository<Showtime, Long> {
     List<Showtime> findByMovieIdAndStartsAtBetweenOrderByStartsAt(Long movieId, LocalDateTime from, LocalDateTime to);
     boolean existsByRoomIdAndStartsAt(Long roomId, LocalDateTime startsAt);
+    List<Showtime> findByMovieIdAndStartsAtAfterOrderByStartsAt(Long movieId, LocalDateTime from);
     
     @Query("select min(s.price) from Showtime s where s.startsAt > :now")
     Optional<BigDecimal> findMinPriceFrom(@Param("now") LocalDateTime now);

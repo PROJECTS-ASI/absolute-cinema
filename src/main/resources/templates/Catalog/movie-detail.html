@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:insert="~{fragments/common :: head(${movie.title}, 'catalog')}"></head>
+<body>
+  <div th:replace="~{fragments/common :: mainHeader('catalog')}"></div>
+
+  <main class="catalog">
+    <p class="catalog__crumb">
+      <a th:href="@{/}">CARTELERA</a> / <span th:text="${#strings.toUpperCase(movie.title)}">PELÍCULA</span>
+    </p>
+
+    <section class="movie-detail">
+      <div class="movie-detail__poster">
+        <img th:src="@{${movie.posterUrl}}" th:alt="'Póster de ' + ${movie.title}">
+      </div>
+
+      <div class="movie-detail__info">
+        <p class="eyebrow" th:text="${movie.genre}">Género</p>
+        <h1 th:text="${movie.title}">Título</h1>
+
+        <p class="movie-detail__meta" th:text="|${movie.durationMinutes} min · ${movie.rating}|">118 min · +12</p>
+
+        <p class="movie-detail__synopsis" th:text="${movie.synopsis}">Sinopsis</p>
+
+        <dl class="movie-detail__facts">
+          <div>
+            <dt>Dirección</dt>
+            <dd th:text="${movie.director}">Director</dd>
+          </div>
+          <div>
+            <dt>Reparto</dt>
+            <dd th:text="${movie.castMembers}">Reparto</dd>
+          </div>
+        </dl>
+
+        <a class="movie-card__cta movie-detail__cta" th:if="${hasShowtimes}"
+           th:href="@{/movies/{id}/showtimes(id=${movie.id})}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6"/>
+          </svg>
+          Ver funciones
+        </a>
+        <p class="catalog__empty movie-detail__empty" th:unless="${hasShowtimes}">
+          Por ahora no hay funciones programadas para esta película.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <div th:replace="~{fragments/common :: footer}"></div>
+</body>
+</html>
