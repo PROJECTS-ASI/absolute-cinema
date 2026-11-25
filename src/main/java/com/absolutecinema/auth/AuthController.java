@@ -1,7 +1,5 @@
 package com.absolutecinema.auth;
 
-import java.security.Principal;
-
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -31,8 +29,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public String register(@Valid @ModelAttribute("registerForm") RegisterForm form,
-                           BindingResult result) {
+    public String register(@Valid @ModelAttribute("registerForm") RegisterForm form, BindingResult result) {
         if (!result.hasErrors() && !form.getPassword().equals(form.getConfirmPassword())) {
             result.rejectValue("confirmPassword", "mismatch", "Las contraseñas no coinciden");
         }
@@ -44,12 +41,5 @@ public class AuthController {
         }
         userService.register(form);
         return "redirect:/login?registered";
-    }
-
-    // TEMPORAL: página de inicio mientras no exista la cartelera
-    @GetMapping("/")
-    public String home(Principal principal, Model model) {
-        model.addAttribute("email", principal.getName());
-        return "home";
     }
 }
