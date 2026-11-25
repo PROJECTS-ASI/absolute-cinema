@@ -4,8 +4,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.absolutecinema.booking.Booking;
 import com.absolutecinema.booking.BookingRepository;
@@ -15,17 +17,17 @@ import com.absolutecinema.booking.BookingStatus;
 @Service
 public class PaymentServiceImpl implements PaymentService {
 
+    private static final BigDecimal MAX_STORED_AMOUNT = new BigDecimal("99999999");
+
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
     private final BookingService bookingService;
     private final CardValidator cardValidator;
 
-    public PaymentServiceImpl(
-            PaymentRepository paymentRepository,
-            BookingRepository bookingRepository,
-            BookingService bookingService,
-            CardValidator cardValidator) {
-
+    public PaymentServiceImpl(PaymentRepository paymentRepository,
+                              BookingRepository bookingRepository,
+                              BookingService bookingService,
+                              CardValidator cardValidator) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.bookingService = bookingService;
@@ -34,133 +36,89 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public Payment registerPayment(
-            Long bookingId,
-            PaymentMethod method,
-            BigDecimal amount) {
-
-        Booking booking = validateBooking(bookingId);
-
-        if (method == null || amount == null ||
-                amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Datos de pago inválidos");
+    public Payment pay(Long bookingId, PaymentRequest request) {
+        if (request == null || request.getMethod() == null) {
+            throw new IllegalArgumentException("Selecciona un método de pago.");
         }
 
-        validateAmount(booking, amount);
+        // Se bloquea la reserva desde el inicio: un doble clic no puede pagar dos veces
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
 
-        if (method != PaymentMethod.MANUAL_AMOUNT) {
-            throw new IllegalArgumentException(
-                    "Este método requiere datos de tarjeta");
-        }
-
-        return approvePayment(booking, method, amount, null);
-    }
-
-    @Override
-    @Transactional
-    public Payment registerCardPayment(
-            Long bookingId,
-            PaymentRequest request) {
-
-        if (request == null) {
-            throw new IllegalArgumentException(
-                    "Los datos de la tarjeta son obligatorios");
-        }
-
-        Booking booking = validateBooking(bookingId);
-
-        BigDecimal amount = request.getAmount();
-
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Importe inválido");
-        }
-
-        validateAmount(booking, amount);
-
-        String brand = cardValidator.validate(request);
-
-        // El pago es simulado: no se almacena ningún dato sensible.
-        return approvePayment(
-                booking,
-                PaymentMethod.CARD,
-                amount,
-                brand
-        );
-    }
-
-    private Booking validateBooking(Long bookingId) {
-
-        if (bookingId == null) {
-            throw new IllegalArgumentException(
-                    "El ID de la reserva es obligatorio");
-        }
-
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Reserva no encontrada"));
-
+        // Estado y vencimiento (no se registra pago: el controlador redirige)
         if (booking.getStatus() != BookingStatus.PENDING) {
-            throw new IllegalArgumentException(
-                    "La reserva no está pendiente");
+            throw new IllegalStateException("La reserva no está pendiente.");
+        }
+        if (!booking.getExpiresAt().isAfter(LocalDateTime.now())) {
+            throw new IllegalStateException("La reserva venció.");
         }
 
-        if (booking.getExpiresAt() == null ||
-                !LocalDateTime.now().isBefore(booking.getExpiresAt())) {
-            throw new IllegalArgumentException(
-                    "La reserva ha vencido");
+        PaymentMethod method = request.getMethod();
+        String brand = null;
+
+        try {
+            if (method == PaymentMethod.MANUAL_AMOUNT) {
+                validateManualAmount(booking, request.getAmount());          // RN-12
+            } else {
+                brand = cardValidator.validate(request);                    // RN-17
+            }
+        } catch (IllegalArgumentException e) {
+            // RN-15: se registra el rechazo, la reserva sigue PENDING y se puede reintentar
+            return save(booking, method, rejectedAmount(booking, request), null,
+                    PaymentStatus.REJECTED, e.getMessage());
         }
 
-        return booking;
-    }
+        // Aprobado. Con tarjeta el importe siempre es el total de la reserva.
+        Payment payment = save(booking, method, booking.getTotal(), brand,
+                PaymentStatus.APPROVED, null);
 
-    private void validateAmount(Booking booking, BigDecimal amount) {
-
-        if (booking.getTotal() == null ||
-                amount.compareTo(booking.getTotal()) != 0) {
-            throw new IllegalArgumentException(
-                    "El importe no coincide con el total de la reserva");
-        }
-    }
-
-    private Payment approvePayment(
-            Booking booking,
-            PaymentMethod method,
-            BigDecimal amount,
-            String brand) {
-
-        Payment payment = new Payment();
-
-        payment.setBooking(booking);
-        payment.setMethod(method);
-        payment.setAmount(amount);
-        payment.setStatus(PaymentStatus.APPROVED);
-        payment.setCardBrand(brand);
-        payment.setCreatedAt(LocalDateTime.now());
-
-        Payment savedPayment = paymentRepository.save(payment);
-
-        // Confirmación mediante el servicio de reservas.
+        // Misma transacción: si confirm falla, el pago se revierte también
         bookingService.confirm(booking.getId());
-
-        return savedPayment;
+        return payment;
     }
 
     @Override
-    public Payment findById(Long id) {
-
-        return paymentRepository.findById(id)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Pago no encontrado"));
-    }
-
-    @Override
+    @Transactional(readOnly = true)
     public List<Payment> findByBooking(Long bookingId) {
         return paymentRepository.findByBookingId(bookingId);
     }
 
-    @Override
-    public List<Payment> findAll() {
-        return paymentRepository.findAll();
+    // ---------------------------------------------------------------
+
+    private void validateManualAmount(Booking booking, BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Ingresa un importe válido.");
+        }
+        if (amount.compareTo(booking.getTotal()) != 0) {
+            throw new IllegalArgumentException(
+                    "El importe no coincide con el total de la reserva (S/ "
+                            + booking.getTotal().setScale(2) + ").");
+        }
+    }
+
+    /** Importe a guardar en un pago rechazado: lo digitado si es razonable; si no, el total. */
+    private BigDecimal rejectedAmount(Booking booking, PaymentRequest request) {
+        BigDecimal typed = request.getAmount();
+        if (request.getMethod() == PaymentMethod.MANUAL_AMOUNT
+                && typed != null
+                && typed.compareTo(BigDecimal.ZERO) > 0
+                && typed.compareTo(MAX_STORED_AMOUNT) < 0) {
+            return typed.setScale(2, java.math.RoundingMode.HALF_UP);
+        }
+        return booking.getTotal();
+    }
+
+    // Nunca se guarda número de tarjeta, CVV ni DNI (RNF-12)
+    private Payment save(Booking booking, PaymentMethod method, BigDecimal amount,
+                         String brand, PaymentStatus status, String reason) {
+        Payment payment = new Payment();
+        payment.setBooking(booking);
+        payment.setMethod(method);
+        payment.setAmount(amount);
+        payment.setStatus(status);
+        payment.setCardBrand(brand);
+        payment.setRejectionReason(reason);
+        payment.setCreatedAt(LocalDateTime.now());
+        return paymentRepository.save(payment);
     }
 }
