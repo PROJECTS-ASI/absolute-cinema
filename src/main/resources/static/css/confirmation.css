@@ -1,0 +1,73 @@
+/* ---------- Confirmación ---------- */
+.confirmation { flex: 1; width: 100%; max-width: 1320px; margin: 0 auto; padding: 32px 56px 56px; }
+.confirmation__head { display: flex; align-items: center; gap: 20px; margin-bottom: 28px; }
+.confirmation__check {
+  width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
+  display: grid; place-items: center; font-size: 28px; color: var(--accent);
+  background: rgba(216, 245, 106, .12); border: 1px solid rgba(216, 245, 106, .35);
+}
+.confirmation__head h1 { margin: 0 0 6px; font-size: 38px; font-weight: 300; }
+.confirmation__head p { margin: 0; color: var(--muted); }
+.confirmation__badge {
+  margin-left: auto; padding: 6px 12px; border-radius: 8px;
+  font-size: 11px; letter-spacing: .06em; color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border);
+}
+.confirmation__layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+
+.ticket-card, .summary-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+}
+.ticket-card__top { display: flex; gap: 24px; padding: 24px; border-bottom: 1px solid var(--border); }
+.ticket-card__poster { width: 140px; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 10px; }
+.ticket-card__venue { margin: 0 0 8px; font-size: 11px; letter-spacing: .06em; color: var(--muted); }
+.ticket-card__info h2 { margin: 0 0 8px; font-size: 30px; font-weight: 400; }
+.ticket-card__tags { margin: 0 0 18px; font-size: 13px; color: var(--muted); }
+.ticket-card__meta { display: flex; gap: 40px; margin: 0; }
+.ticket-card__meta dt { font-size: 11px; letter-spacing: .06em; color: var(--muted); }
+.ticket-card__meta dd { margin: 4px 0 0; font-size: 15px; font-weight: 600; }
+
+.ticket-list { list-style: none; margin: 0; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px; }
+.ticket {
+  display: flex; align-items: center; gap: 16px; padding: 14px 18px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+}
+.ticket > div { flex: 1; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.ticket > div span { font-size: 12px; color: var(--muted); }
+.ticket__seat { font-size: 24px; color: var(--accent); }
+.ticket__price { min-width: 64px; text-align: right; }
+
+.ticket-card__code {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px; border-top: 1px solid var(--border);
+}
+.ticket-card__code span { font-size: 11px; letter-spacing: .06em; color: var(--muted); }
+.ticket-card__code strong { font-size: 26px; font-weight: 500; letter-spacing: .04em; }
+
+.summary-card { padding: 24px; }
+.summary-card h3 { margin: 0 0 18px; font-size: 18px; font-weight: 500; }
+.summary-card h4 { margin: 20px 0 8px; font-size: 14px; font-weight: 500; }
+.summary-card__rows { margin: 0; display: flex; flex-direction: column; gap: 12px; font-size: 14px; }
+.summary-card__rows > div { display: flex; justify-content: space-between; gap: 16px; }
+.summary-card__rows dt { color: var(--muted); }
+.summary-card__rows dd { margin: 0; text-align: right; }
+.summary-card__rows .is-accent { color: var(--accent); font-weight: 600; }
+.summary-card__note { margin: 16px 0 0; font-size: 12px; line-height: 1.6; color: var(--muted); }
+
+.confirmation__actions { display: flex; gap: 12px; margin-top: 28px; }
+.btn-link {
+  display: inline-flex; align-items: center; height: 44px; padding: 0 20px;
+  border-radius: 8px; font-size: 14px; font-weight: 600;
+  background: var(--surface); border: 1px solid var(--border);
+}
+.btn-link:hover { border-color: var(--accent); }
+.btn-link--primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+
+@media (max-width: 800px) {
+  .confirmation { padding: 24px 20px 40px; }
+  .confirmation__head { flex-wrap: wrap; }
+  .confirmation__head h1 { font-size: 28px; }
+  .confirmation__layout { grid-template-columns: 1fr; }
+  .ticket-card__top { flex-direction: column; }
+  .ticket-card__meta { gap: 24px; flex-wrap: wrap; }
+}
