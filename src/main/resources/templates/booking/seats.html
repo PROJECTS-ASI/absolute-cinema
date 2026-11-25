@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:insert="~{fragments/common :: head('Selecciona tus asientos', 'seats')}"></head>
+<body>
+  <div th:replace="~{fragments/common :: mainHeader('catalog')}"></div>
+
+  <main class="seats">
+    <p class="seats__crumb">
+      <a th:href="@{/}">Cartelera</a> /
+      <a th:href="@{/movies/{id}/showtimes(id=${showtime.movie.id})}" th:text="${showtime.movie.title}">Película</a> / Asientos
+    </p>
+
+    <div class="seats__alert" role="alert" th:if="${error}" th:text="${error}">Error</div>
+
+    <form class="seats__layout" method="post" id="seat-form"
+          th:action="@{/showtimes/{id}/seats(id=${showtime.id})}"
+          th:attr="data-price=${showtime.price}, data-max=${maxSeats}">
+
+      <section class="seats__main">
+        <h1>Selecciona tus asientos</h1>
+
+        <div class="seats__legend">
+          <span><i class="seat-dot seat-dot--available"></i> Disponible</span>
+          <span><i class="seat-dot seat-dot--selected"></i> Seleccionado</span>
+          <span><i class="seat-dot seat-dot--locked"></i> Bloqueado</span>
+          <span><i class="seat-dot seat-dot--sold"></i> Vendido</span>
+        </div>
+
+        <div class="seats__screen"><span>PANTALLA</span></div>
+
+        <div class="seat-map" aria-label="Mapa de asientos">
+          <div class="seat-row" th:each="row : ${rows}">
+            <span class="seat-row__label" th:text="${row.label}">A</span>
+            <label class="seat"
+                   th:each="s : ${row.seats}"
+                   th:with="code=${row.label + s.seatNumber}, free=${s.status.name() == 'AVAILABLE'}"
+                   th:classappend="|seat--${#strings.toLowerCase(s.status.name())}
+                       ${s.seatNumber == 6 ? 'seat--aisle' : ''}
+                       ${unavailable != null and #lists.contains(unavailable, code) ? 'seat--conflict' : ''}|"
+                   th:title="${code}">
+              <input type="checkbox" name="seatIds" th:value="${s.seatId}" th:disabled="${!free}">
+              <span th:text="${s.seatNumber}">1</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <aside class="seats__summary">
+        <h2>Resumen</h2>
+        <img class="seats__poster" th:src="@{${showtime.movie.posterUrl}}" th:alt="'Póster de ' + ${showtime.movie.title}">
+        <p class="seats__movie" th:text="${showtime.movie.title}">Película</p>
+        <dl>
+          <dt>Función</dt>
+          <dd th:text="${#temporals.format(showtime.startsAt, 'dd/MM/yyyy · HH:mm')}">24/11/2026 · 19:30</dd>
+          <dt>Sala</dt>
+          <dd th:text="${showtime.room.name}">Sala 01</dd>
+          <dt>Precio por entrada</dt>
+          <dd th:text="${'S/ ' + #numbers.formatDecimal(showtime.price, 1, 2)}">S/ 9.00</dd>
+        </dl>
+
+        <h3>Asientos elegidos</h3>
+        <p id="seat-list" class="seats__chosen">Aún no elegiste asientos.</p>
+        <p id="seat-limit" class="seats__limit" hidden>Máximo <span th:text="${maxSeats}">8</span> asientos por reserva.</p>
+
+        <div class="seats__total"><span>Total</span><strong id="seat-total">S/ 0.00</strong></div>
+
+        <button type="submit" id="seat-submit" class="seats__btn" disabled>Continuar al pago</button>
+        <p class="seats__note">Tendrás 5:00 min para completar el pago una vez continúes.</p>
+      </aside>
+    </form>
+  </main>
+
+  <div th:replace="~{fragments/common :: footer}"></div>
+  <script th:src="@{/js/seats.js}"></script>
+</body>
+</html>
