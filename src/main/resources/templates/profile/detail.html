@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:insert="~{fragments/common :: head('Detalle de compra', 'profile')}"></head>
+<body>
+
+<div th:replace="~{fragments/common :: mainHeader('profile')}"></div>
+
+<main class="profile-page">
+
+    <section class="profile-heading">
+        <p class="profile-eyebrow">ABSOLUTECINEMA / MI CUENTA</p>
+        <h1>Detalle de compra</h1>
+        <p>Consulta toda la información de tu reserva.</p>
+    </section>
+
+    <div class="profile-card">
+
+        <div class="profile-card__header">
+            <div>
+                <h2 th:text="${purchase.movieTitle}">Película</h2>
+                <p>
+                    Código de reserva:
+                    <strong th:text="${purchase.code}">ABC-000</strong>
+                </p>
+            </div>
+            <span class="history-status"
+                  th:text="${purchase.bookingStatus}">
+                CONFIRMED
+            </span>
+        </div>
+
+        <section class="detail-section">
+            <h3>Información de la función</h3>
+
+            <div class="detail-grid">
+                <div class="history-field">
+                    <span>Película</span>
+                    <strong th:text="${purchase.movieTitle}">Película</strong>
+                </div>
+
+                <div class="history-field">
+                    <span>Fecha y hora</span>
+                    <strong th:text="${purchase.showtimeDate != null
+                        ? #temporals.format(purchase.showtimeDate, 'dd/MM/yyyy HH:mm')
+                        : 'No disponible'}">
+                        30/10/2026
+                    </strong>
+                </div>
+
+                <div class="history-field">
+                    <span>Asientos</span>
+                    <strong th:text="${#strings.isEmpty(purchase.seats)
+                        ? 'No disponibles'
+                        : purchase.seats}">
+                        A1, A2
+                    </strong>
+                </div>
+
+                <div class="history-field">
+                    <span>Fecha de compra</span>
+                    <strong th:text="${purchase.purchaseDate != null
+                        ? #temporals.format(purchase.purchaseDate, 'dd/MM/yyyy HH:mm')
+                        : 'No disponible'}">
+                        30/10/2026
+                    </strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="detail-section">
+            <h3>Resumen de pago</h3>
+
+            <div class="detail-total">
+                <span>Importe total de la reserva</span>
+                <strong th:text="${'S/ ' + #numbers.formatDecimal(purchase.total, 1, 2)}">
+                    S/ 40.00
+                </strong>
+            </div>
+
+            <div th:if="${#lists.isEmpty(purchase.payments)}"
+                 class="detail-empty">
+                Todavía no existen pagos registrados para esta reserva.
+            </div>
+
+            <div th:unless="${#lists.isEmpty(purchase.payments)}"
+                 class="payment-list">
+
+                <article class="payment-item"
+                         th:each="payment : ${purchase.payments}">
+
+                    <div class="payment-item__header">
+                        <strong>Pago #<span th:text="${payment.paymentId}">1</span></strong>
+                        <span class="history-status"
+                              th:text="${payment.status}">
+                            APPROVED
+                        </span>
+                    </div>
+
+                    <div class="detail-grid">
+                        <div class="history-field">
+                            <span>Método de pago</span>
+                            <strong th:text="${payment.method == T(com.absolutecinema.payment.PaymentMethod).CARD
+                                ? 'Tarjeta'
+                                : 'Importe manual'}">
+                                Tarjeta
+                            </strong>
+                        </div>
+
+                        <div class="history-field">
+                            <span>Importe</span>
+                            <strong th:text="${'S/ ' + #numbers.formatDecimal(payment.amount, 1, 2)}">
+                                S/ 40.00
+                            </strong>
+                        </div>
+
+                        <div class="history-field"
+                             th:if="${payment.cardBrand != null}">
+                            <span>Marca de tarjeta</span>
+                            <strong th:text="${payment.cardBrand}">VISA</strong>
+                        </div>
+
+                        <div class="history-field">
+                            <span>Fecha del pago</span>
+                            <strong th:text="${payment.createdAt != null
+                                ? #temporals.format(payment.createdAt, 'dd/MM/yyyy HH:mm')
+                                : 'No disponible'}">
+                                30/10/2026
+                            </strong>
+                        </div>
+                    </div>
+
+                    <div class="payment-rejection"
+                         th:if="${payment.rejectionReason != null
+                             and payment.status == T(com.absolutecinema.payment.PaymentStatus).REJECTED}">
+                        <strong>Motivo del rechazo:</strong>
+                        <span th:text="${payment.rejectionReason}"></span>
+                    </div>
+
+                </article>
+            </div>
+        </section>
+
+        <div class="detail-actions">
+            <a th:href="@{/profile/history}" class="btn-primary">
+                Volver al historial
+            </a>
+        </div>
+
+    </div>
+
+</main>
+
+<div th:replace="~{fragments/common :: footer}"></div>
+
+</body>
+</html>
