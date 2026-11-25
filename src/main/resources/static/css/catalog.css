@@ -78,3 +78,32 @@
   .catalog__top h1 { font-size: 30px; }
   .catalog__note { flex-direction: column; align-items: flex-start; }
 }
+
+/* ---------- Detalle de película y funciones (añadir al final de catalog.css) ---------- */
+.catalog h2 { font-size: 18px; font-weight: 500; margin: 32px 0 14px; }
+.movie-detail { display: flex; gap: 32px; align-items: flex-start; }
+.movie-detail__poster { width: 220px; border-radius: 12px; flex-shrink: 0; }
+.movie-detail h1 { margin: 0 0 8px; font-size: 36px; font-weight: 300; }
+.date-tabs, .showtime-list { display: flex; flex-wrap: wrap; gap: 12px; }
+.date-tabs__item {
+  padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border);
+  font-size: 14px; text-transform: capitalize;
+}
+.date-tabs__item.is-active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+.showtime-card {
+  display: flex; flex-direction: column; gap: 4px; min-width: 130px;
+  padding: 14px 18px; border-radius: 10px; border: 1px solid var(--border);
+}
+.showtime-card strong { font-size: 20px; }
+.showtime-card span { font-size: 13px; color: var(--muted); }
+.showtime-card:hover { border-color: var(--accent); }
+@media (max-width: 720px) {
+  .catalog { padding: 24px 20px 40px; }
+  .movie-detail { flex-direction: column; }
+}
+.date-tabs__item.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text) !important;   /* pisa el !important global */
+  font-weight: 600;
+}

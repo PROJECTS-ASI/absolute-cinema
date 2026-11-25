@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:insert="~{fragments/common :: head('Confirmación', 'confirmation')}"></head>
+<body>
+  <div th:replace="~{fragments/common :: mainHeader('catalog')}"></div>
+
+
+  <main class="confirmation">
+    <div class="confirmation__head">
+      <span class="confirmation__check">✓</span>
+      <div>
+        <h1>Tus entradas están listas.</h1>
+        <p th:text="|Reserva confirmada, ${userName}. Nos vemos al otro lado de la pantalla.|">
+          Reserva confirmada.
+        </p>
+      </div>
+      <span class="confirmation__badge">COMPRA SIMULADA</span>
+    </div>
+
+    <div class="confirmation__layout">
+      <section class="ticket-card">
+        <div class="ticket-card__top">
+          <img class="ticket-card__poster" th:src="@{${booking.showtime.movie.posterUrl}}"
+               th:alt="'Póster de ' + ${booking.showtime.movie.title}">
+          <div class="ticket-card__info">
+            <p class="ticket-card__venue">ABSOLUTECINEMA CENTRO · LIMA, PERÚ</p>
+            <h2 th:text="${booking.showtime.movie.title}">Título</h2>
+            <p class="ticket-card__tags"
+               th:text="|${booking.showtime.movie.rating} · ${booking.showtime.movie.durationMinutes} min|">
+              +12 · 118 min
+            </p>
+            <dl class="ticket-card__meta">
+              <div><dt>FECHA</dt><dd th:text="${dateLabel}">Viernes, 30 oct 2026</dd></div>
+              <div><dt>HORA</dt><dd th:text="${timeLabel}">8:30 p. m.</dd></div>
+              <div><dt>SALA</dt><dd th:text="${booking.showtime.room.name}">Sala 02</dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <ul class="ticket-list">
+          <li class="ticket" th:each="t : ${tickets}">
+            <div>
+              <strong>Entrada general</strong>
+              <span th:text="|${booking.code} · ${t.seatLabel()}|">ABS-301026-K7M2 · E7</span>
+            </div>
+            <span class="ticket__seat" th:text="${t.seatLabel()}">E7</span>
+            <span class="ticket__price" th:text="${t.priceLabel()}">S/ 9.00</span>
+          </li>
+        </ul>
+
+        <div class="ticket-card__code">
+          <span>CÓDIGO DE RESERVA</span>
+          <strong th:text="${booking.code}">ABS-301026-K7M2</strong>
+        </div>
+      </section>
+
+      <aside class="summary-card">
+        <h3>Todo listo para tu sesión</h3>
+        <dl class="summary-card__rows">
+          <div><dt>Entradas</dt><dd th:text="|${ticketCount} · General|">2 · General</dd></div>
+          <div><dt>Total simulado</dt><dd class="is-accent" th:text="${totalLabel}">S/ 18.00</dd></div>
+          <div><dt>Método</dt><dd th:text="${methodLabel}">Tarjeta simulada</dd></div>
+        </dl>
+        <p class="summary-card__note">
+          Compra de demostración completada. No se ha realizado ningún cobro real.
+        </p>
+        <h4>Antes de venir</h4>
+        <p class="summary-card__note">
+          Horario de Lima (UTC-5). Llega 15 minutos antes del inicio y conserva el código de reserva.
+        </p>
+      </aside>
+    </div>
+
+    <div class="confirmation__actions">
+      <a class="btn-link btn-link--primary" th:href="@{/}">← Volver a cartelera</a>
+      <a class="btn-link" th:href="@{/profile/history}">Ver mis compras</a>
+    </div>
+  </main>
+
+  <div th:replace="~{fragments/common :: footer}"></div>
+</body>
+</html>

@@ -1,0 +1,127 @@
+
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:insert="~{fragments/common :: head('Historial de compras', 'profile')}"></head>
+<body>
+
+<div th:replace="~{fragments/common :: mainHeader('profile')}"></div>
+
+<main class="profile-page">
+
+    <section class="profile-heading">
+        <p class="profile-eyebrow">ABSOLUTECINEMA / MI CUENTA</p>
+        <h1>Historial de compras</h1>
+        <p>Consulta tus reservas, funciones y pagos realizados.</p>
+    </section>
+
+    <div class="profile-card">
+
+        <div class="profile-card__header">
+            <div>
+                <h2>Mis compras</h2>
+                <p>Estas son las reservas asociadas a tu cuenta.</p>
+            </div>
+            <a th:href="@{/profile}" class="btn-primary">
+                Volver a mi perfil
+            </a>
+        </div>
+
+        <div th:if="${#lists.isEmpty(purchases)}" class="history-empty">
+            <h3>Aún no tienes compras</h3>
+            <p>
+                Cuando realices una reserva, podrás consultar aquí
+                los detalles de tus compras.
+            </p>
+            <a th:href="@{/}" class="btn-primary">
+                Explorar cartelera
+            </a>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(purchases)}" class="history-list">
+
+            <article class="history-item" th:each="purchase : ${purchases}">
+
+                <div class="history-item__header">
+                    <div>
+                        <span class="field-hint">Código de reserva</span>
+                        <h3 th:text="${purchase.code}">ABC-000</h3>
+                    </div>
+
+                    <span class="history-status"
+                          th:text="${purchase.bookingStatus}">
+                        CONFIRMED
+                    </span>
+                </div>
+
+                <div class="history-item__content">
+
+                    <div class="history-field">
+                        <span>Película</span>
+                        <strong th:text="${purchase.movieTitle}">Película</strong>
+                    </div>
+
+                    <div class="history-field">
+                        <span>Fecha de función</span>
+                        <strong th:text="${purchase.showtimeDate != null
+                            ? #temporals.format(purchase.showtimeDate, 'dd/MM/yyyy HH:mm')
+                            : 'No disponible'}">
+                            30/10/2026
+                        </strong>
+                    </div>
+
+                    <div class="history-field">
+                        <span>Asientos</span>
+                        <strong th:text="${#strings.isEmpty(purchase.seats)
+                            ? 'No disponibles'
+                            : purchase.seats}">
+                            A1, A2
+                        </strong>
+                    </div>
+
+                    <div class="history-field">
+                        <span>Fecha de compra</span>
+                        <strong th:text="${purchase.purchaseDate != null
+                            ? #temporals.format(purchase.purchaseDate, 'dd/MM/yyyy HH:mm')
+                            : 'No disponible'}">
+                            30/10/2026
+                        </strong>
+                    </div>
+
+                    <div class="history-field">
+                        <span>Estado del pago</span>
+                        <strong th:text="${purchase.paymentStatus != null
+                            ? purchase.paymentStatus
+                            : 'Sin registro'}">
+                            APPROVED
+                        </strong>
+                    </div>
+
+                    <div class="history-field">
+                        <span>Importe total</span>
+                        <strong class="history-total"
+                                th:text="${'S/ ' + #numbers.formatDecimal(purchase.total, 1, 2)}">
+                            S/ 40.00
+                        </strong>
+                    </div>
+
+                </div>
+
+                <div class="history-item__footer">
+                    <a th:href="@{/profile/history/{id}(id=${purchase.bookingId})}"
+                       class="history-detail-link">
+                        Ver detalle de compra →
+                    </a>
+                </div>
+
+            </article>
+
+        </div>
+
+    </div>
+
+</main>
+
+<div th:replace="~{fragments/common :: footer}"></div>
+
+</body>
+</html>

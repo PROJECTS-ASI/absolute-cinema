@@ -22,9 +22,13 @@ public class UserService implements UserDetailsService {
     
     public User getByEmail(String email) {
         return userRepository.findByEmail(normalize(email))
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found")
+                		);
+        
     }
-
+    public User save(User user) {
+        return userRepository.save(user);
+    }
     public User register(RegisterForm form) {
         String email = normalize(form.getEmail());
         if (userRepository.existsByEmail(email)) {
