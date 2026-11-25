@@ -1,0 +1,187 @@
+
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head th:insert="~{fragments/common :: head('Seleccionar asientos', 'booking')}"></head>
+
+<body>
+
+  <div th:replace="~{fragments/common :: mainHeader('catalog')}"></div>
+
+  <main class="booking">
+
+    <!-- Navegacion -->
+    <p class="booking__breadcrumb">
+      ABSOLUTECINEMA / CARTELERA / RESERVA DE ASIENTOS
+    </p>
+
+    <!-- Titulo -->
+    <section class="booking__heading">
+      <div>
+        <p class="booking__eyebrow">TU EXPERIENCIA COMIENZA AQUÍ</p>
+        <h1>Selecciona tus asientos</h1>
+        <p>Elige dónde quieres disfrutar de tu película.</p>
+      </div>
+
+      <div class="booking__timer">
+        <span>TIEMPO DE RESERVA</span>
+        <strong id="booking-timer">05:00</strong>
+      </div>
+    </section>
+
+
+	<!-- Informacion de pelicula -->
+	<section class="booking-movie">
+	    <div class="booking-movie__poster">
+	        <img th:src="${movie.posterUrl}"
+	             th:alt="'Póster de ' + ${movie.title}">
+	    </div>
+
+	    <div class="booking-movie__info">
+	        <span class="booking-movie__tag">PELÍCULA SELECCIONADA</span>
+
+	        <h2 th:text="${movie.title}">Título de la película</h2>
+
+	        <p th:text="|${movie.genre} · ${movie.durationMinutes} min · ${movie.rating}|">
+	            Género · Duración · Clasificación
+	        </p>
+
+	        <div class="booking-movie__details">
+	            <span>📍 Sala 01</span>
+	            <span>📅 Función de demostración</span>
+	            <span>🕒 19:30</span>
+	        </div>
+	    </div>
+	</section>
+
+
+    <!-- Contenido de reserva -->
+    <section class="booking-layout">
+
+      <div class="booking-main">
+
+        <div class="booking-section-title">
+          <h2>Mapa de asientos</h2>
+          <span>Selecciona tus lugares</span>
+        </div>
+
+        <!-- Leyenda -->
+        <div class="booking-legend">
+
+          <div>
+            <span class="legend-seat legend-seat--available"></span>
+            <span>Disponible</span>
+          </div>
+
+          <div>
+            <span class="legend-seat legend-seat--selected"></span>
+            <span>Seleccionado</span>
+          </div>
+
+          <div>
+            <span class="legend-seat legend-seat--locked"></span>
+            <span>Bloqueado</span>
+          </div>
+
+          <div>
+            <span class="legend-seat legend-seat--sold"></span>
+            <span>Vendido</span>
+          </div>
+
+        </div>
+
+        <!-- Pantalla de cine -->
+        <div class="cinema-screen">
+          <div class="cinema-screen__light"></div>
+          <span>PANTALLA</span>
+        </div>
+
+        <!-- Mapa generado por JavaScript -->
+        <div class="seat-map-container">
+          <div id="seat-map"
+               class="seat-map"
+               data-rows="8"
+               data-columns="12"
+               aria-label="Mapa de asientos de la sala">
+          </div>
+        </div>
+
+        <p class="booking__map-note">
+          Los asientos seleccionados aparecerán resaltados en verde.
+        </p>
+
+      </div>
+
+      <!-- Resumen -->
+      <aside class="booking-summary">
+
+        <h2>Resumen de reserva</h2>
+        <p class="booking-summary__subtitle">
+          Revisa tus asientos antes de continuar.
+        </p>
+
+		<div class="booking-summary__line">
+		    <span>Película</span>
+		    <strong th:text="${movie.title}">Título de la película</strong>
+		</div>
+
+        <div class="booking-summary__line">
+          <span>Función</span>
+          <strong>19:30</strong>
+        </div>
+
+        <div class="booking-summary__line">
+          <span>Sala</span>
+          <strong>Sala 01</strong>
+        </div>
+
+        <div class="booking-summary__divider"></div>
+
+        <h3>Asientos seleccionados</h3>
+
+        <div id="selected-seats" class="selected-seats">
+          <span class="selected-seats__empty">
+            Aún no seleccionaste asientos.
+          </span>
+        </div>
+
+        <div class="booking-summary__divider"></div>
+
+        <div class="booking-summary__price">
+          <span>Precio por entrada</span>
+          <strong id="ticket-price">S/ 15.00</strong>
+        </div>
+
+        <div class="booking-summary__total">
+          <span>Total a pagar</span>
+          <strong id="booking-total">S/ 0.00</strong>
+        </div>
+
+        <button id="continue-booking"
+                class="booking__continue"
+                type="button"
+                disabled>
+          Continuar con la compra
+        </button>
+
+        <a href="/" class="booking__back">
+          Volver a la cartelera
+        </a>
+
+        <p class="booking-summary__note">
+          La selección visual no confirma una reserva.
+          Los asientos deberán bloquearse antes de continuar.
+        </p>
+
+      </aside>
+
+    </section>
+
+  </main>
+
+  <div th:replace="~{fragments/common :: footer}"></div>
+
+  <script th:src="@{/js/booking.js}"></script>
+
+</body>
+</html>
