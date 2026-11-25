@@ -1,9 +1,11 @@
+
 package com.absolutecinema.payment;
 
 import java.math.BigDecimal;
 
 public class PaymentRequest {
 
+    private Long bookingId;
     private PaymentMethod method;
     private BigDecimal amount;
 
@@ -12,6 +14,14 @@ public class PaymentRequest {
     private String dni;
     private String expirationDate;
     private String cvv;
+
+    public Long getBookingId() {
+        return bookingId;
+    }
+
+    public void setBookingId(Long bookingId) {
+        this.bookingId = bookingId;
+    }
 
     public PaymentMethod getMethod() {
         return method;
