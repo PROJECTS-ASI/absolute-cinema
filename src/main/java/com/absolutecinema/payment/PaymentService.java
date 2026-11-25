@@ -1,24 +1,18 @@
 package com.absolutecinema.payment;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 public interface PaymentService {
 
-    Payment registerPayment(
-            Long bookingId,
-            PaymentMethod method,
-            BigDecimal amount
-    );
-
-    Payment registerCardPayment(
-            Long bookingId,
-            PaymentRequest request
-    );
-
-    Payment findById(Long id);
+    /**
+     * Procesa un pago para la reserva.
+     * - Pago aprobado: registra el Payment (APPROVED) y llama a bookingService.confirm()
+     *   en la misma transacción.
+     * - Pago rechazado (importe o tarjeta inválidos): registra el Payment (REJECTED) con
+     *   su motivo, deja la reserva en PENDING y lo devuelve sin lanzar excepción.
+     * - Lanza IllegalStateException si la reserva no está PENDING o ya venció.
+     */
+    Payment pay(Long bookingId, PaymentRequest request);
 
     List<Payment> findByBooking(Long bookingId);
-
-    List<Payment> findAll();
 }
