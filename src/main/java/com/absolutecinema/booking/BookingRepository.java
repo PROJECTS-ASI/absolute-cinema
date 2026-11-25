@@ -16,8 +16,10 @@ import jakarta.persistence.LockModeType;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByUserOrderByCreatedAtDesc(User user);
-    
+
     List<Booking> findByUserIdAndShowtimeIdAndStatus(Long userId, Long showtimeId, BookingStatus status);
+
+    boolean existsByCode(String code);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select b from Booking b where b.id = :id")
