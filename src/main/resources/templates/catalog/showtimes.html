@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:insert="~{fragments/common :: head(${movie.title}, 'catalog')}"></head>
+<body>
+  <div th:replace="~{fragments/common :: mainHeader('catalog')}"></div>
+
+  <main class="catalog">
+    <p class="catalog__crumb"><a th:href="@{/}">← Cartelera</a></p>
+
+    <section class="movie-detail">
+      <img class="movie-detail__poster" th:src="@{${movie.posterUrl}}" th:alt="'Póster de ' + ${movie.title}">
+      <div>
+        <h1 th:text="${movie.title}">Título</h1>
+        <p class="movie-card__meta"
+           th:text="|${movie.genre} · ${movie.durationMinutes} min · ${movie.rating}|">Género · 118 min · +12</p>
+        <p th:text="${movie.synopsis}">Sinopsis</p>
+        <p th:if="${movie.director}"><strong>Dirección:</strong> <span th:text="${movie.director}"></span></p>
+        <p th:if="${movie.castMembers}"><strong>Reparto:</strong> <span th:text="${movie.castMembers}"></span></p>
+      </div>
+    </section>
+
+    <h2>Elige el día</h2>
+    <p class="catalog__empty" th:if="${#lists.isEmpty(dates)}">Esta película no tiene funciones programadas.</p>
+    <nav class="date-tabs">
+      <a th:each="d : ${dates}" class="date-tabs__item" th:classappend="${d.active} ? 'is-active'"
+         th:href="@{/movies/{id}/showtimes(id=${movie.id}, date=${d.date})}" th:text="${d.label}">lun 24 nov</a>
+    </nav>
+
+    <h2>Funciones</h2>
+    <p class="catalog__empty" th:if="${#lists.isEmpty(showtimes)}">No hay funciones disponibles para este día.</p>
+    <div class="showtime-list">
+      <a class="showtime-card" th:each="s : ${showtimes}" th:href="@{/showtimes/{id}/seats(id=${s.id})}">
+        <strong th:text="${s.time}">19:30</strong>
+        <span th:text="${s.room}">Sala 01</span>
+        <span th:text="${s.price}">S/ 9.00</span>
+      </a>
+    </div>
+  </main>
+
+  <div th:replace="~{fragments/common :: footer}"></div>
+</body>
+</html>
