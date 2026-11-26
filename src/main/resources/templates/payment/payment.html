@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:insert="~{fragments/common :: head('Pago de reserva', 'payment')}"></head>
+<body>
+  <div th:replace="~{fragments/common :: mainHeader('catalog')}"></div>
+
+
+  <main class="payment-page"
+        id="payment-app"
+        th:attr="data-booking-id=${booking.id},
+                 data-booking-status=${booking.status.name()},
+                 data-total=${booking.total},
+                 data-expires-at=${booking.expiresAt},
+				 data-seconds-left=${secondsLeft},
+                 data-movie-title=${booking.showtime.movie.title},
+                 data-poster-url=${booking.showtime.movie.posterUrl},
+                 data-genre=${booking.showtime.movie.genre},
+                 data-duration=${booking.showtime.movie.durationMinutes},
+                 data-rating=${booking.showtime.movie.rating},
+                 data-room-name=${booking.showtime.room.name},
+                 data-starts-at=${booking.showtime.startsAt},
+                 data-unit-price=${booking.showtime.price},
+                 data-seats=${#strings.listJoin(seatLabels, ', ')},
+                 data-ticket-count=${ticketCount},
+                 data-confirmation-url=@{/bookings/{id}/confirmation(id=${booking.id})},
+                 data-csrf-token=${_csrf != null ? _csrf.token : ''},
+                 data-csrf-header=${_csrf != null ? _csrf.headerName : ''}">
+
+    <div class="payment-top">
+      <a class="payment-back"
+         id="back-to-seats-link"
+         th:href="@{/showtimes/{id}/seats(id=${booking.showtime.id})}">
+        ← Volver a los asientos
+      </a>
+
+      <div class="payment-timer" id="booking-timer-box" role="timer" aria-live="polite">
+        <span class="payment-timer__label">Tiempo restante de reserva</span>
+        <strong class="payment-timer__value" id="countdown-display">--:--</strong>
+      </div>
+    </div>
+
+    <header class="payment-header">
+      <p class="payment-eyebrow">03 / RESUMEN Y PAGO</p>
+      <h1>Completa tu pago.</h1>
+      <p class="payment-subtitle">
+        Revisa los detalles de tu función y elige cómo deseas simular el pago antes de que venza el tiempo.
+      </p>
+    </header>
+
+    <div class="payment-alert payment-alert--warning" id="expiring-warning" role="status" hidden>
+      Tu reserva está próxima a vencer. Finaliza el pago antes de que el contador llegue a 00:00.
+    </div>
+
+    <div class="payment-alert payment-alert--expired" id="expired-banner" role="alert" hidden>
+      <div class="payment-alert__content">
+        <strong>La reserva ha vencido.</strong>
+        <p id="expired-message">
+          El tiempo de bloqueo ha finalizado y tus asientos ya no están reservados.
+        </p>
+      </div>
+      <a class="payment-btn payment-btn--primary payment-btn--compact"
+         id="expired-catalog-btn"
+         th:href="@{/}">
+        Volver a cartelera
+      </a>
+    </div>
+
+    <div class="payment-alert payment-alert--error" id="payment-result-box" role="alert" hidden>
+      <div class="payment-alert__content">
+        <strong id="payment-result-title">Estado del pago</strong>
+        <p id="payment-result-message"></p>
+      </div>
+      <div class="payment-alert__actions">
+        <button type="button" class="payment-btn payment-btn--secondary payment-btn--compact" id="retry-payment-btn" hidden>
+          Intentar nuevamente
+        </button>
+        <a class="payment-btn payment-btn--primary payment-btn--compact"
+           id="result-catalog-btn"
+           th:href="@{/}"
+           hidden>
+          Volver a cartelera
+        </a>
+      </div>
+    </div>
+
+    <div class="payment-alert payment-alert--success" id="payment-success-box" role="status" hidden>
+      <strong>Pago aprobado.</strong>
+      <p id="payment-success-message">Redirigiendo a la confirmación de tus entradas...</p>
+    </div>
+
+    <div class="payment-layout">
+      <section class="payment-main" aria-label="Métodos y datos de pago">
+        <div class="payment-card payment-sim-notice">
+          <span class="payment-sim-notice__badge">SIMULACIÓN ACADÉMICA</span>
+          <p>
+            No se realizan cobros reales. Los datos de la tarjeta de prueba se envían solo para validarlos y no se almacenan.
+          </p>
+        </div>
+
+        <form class="payment-card" id="payment-form" novalidate>
+          <div class="payment-card__head">
+            <div>
+              <h2>Método de pago</h2>
+              <p class="payment-card__desc">Selecciona una modalidad para continuar con tu reserva.</p>
+            </div>
+          </div>
+
+          <div class="payment-methods" role="radiogroup" aria-label="Selecciona un método de pago">
+            <label class="method-option is-selected" data-method="CARD">
+              <input type="radio" name="paymentMethod" value="CARD" checked>
+              <span class="method-option__body">
+                <strong class="method-option__title">Tarjeta simulada</strong>
+                <span class="method-option__meta">Visa o American Express · Validación Luhn</span>
+              </span>
+            </label>
+
+            <label class="method-option" data-method="MANUAL_AMOUNT">
+              <input type="radio" name="paymentMethod" value="MANUAL_AMOUNT">
+              <span class="method-option__body">
+                <strong class="method-option__title">Importe manual</strong>
+                <span class="method-option__meta">Ingresa el monto exacto de la reserva</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="payment-panel" id="card-method-panel">
+            <div class="payment-panel__header">
+              <h3>Datos de tarjeta de prueba</h3>
+              <span class="card-brand-badge is-unknown" id="card-brand-badge" aria-live="polite">
+                Marca no identificada
+              </span>
+            </div>
+
+            <div class="payment-field">
+              <label for="card-holder">Titular de la tarjeta</label>
+              <input type="text"
+                     id="card-holder"
+                     name="cardHolder"
+                     autocomplete="off"
+                     placeholder="Ej. LUCÍA MARTÍN"
+                     aria-describedby="card-holder-error">
+              <span class="payment-field__error" id="card-holder-error" role="alert"></span>
+            </div>
+
+            <div class="payment-field">
+              <label for="card-dni">DNI</label>
+              <input type="text"
+                     id="card-dni"
+                     name="cardDni"
+                     inputmode="numeric"
+                     maxlength="8"
+                     autocomplete="off"
+                     placeholder="8 dígitos"
+                     aria-describedby="card-dni-error">
+              <span class="payment-field__error" id="card-dni-error" role="alert"></span>
+            </div>
+
+            <div class="payment-field">
+              <label for="card-number">Número de tarjeta</label>
+              <input type="text"
+                     id="card-number"
+                     name="cardNumber"
+                     inputmode="numeric"
+                     maxlength="19"
+                     autocomplete="off"
+                     placeholder="Ingresa número Visa o Amex"
+                     aria-describedby="card-number-error">
+              <span class="payment-field__error" id="card-number-error" role="alert"></span>
+            </div>
+
+            <div class="payment-field-grid">
+              <div class="payment-field">
+                <label for="card-expiry">Fecha de vencimiento (MM/YY)</label>
+                <input type="text"
+                       id="card-expiry"
+                       name="cardExpiry"
+                       inputmode="numeric"
+                       maxlength="5"
+                       autocomplete="off"
+                       placeholder="MM/AA"
+                       aria-describedby="card-expiry-error">
+                <span class="payment-field__error" id="card-expiry-error" role="alert"></span>
+              </div>
+
+              <div class="payment-field">
+                <label for="card-cvv" id="card-cvv-label">CVV (3 dígitos)</label>
+                <input type="text"
+                       id="card-cvv"
+                       name="cardCvv"
+                       inputmode="numeric"
+                       maxlength="4"
+                       autocomplete="off"
+                       placeholder="123"
+                       aria-describedby="card-cvv-error">
+                <span class="payment-field__error" id="card-cvv-error" role="alert"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="payment-panel" id="manual-method-panel" hidden>
+            <div class="payment-panel__header">
+              <h3>Pago por importe manual</h3>
+            </div>
+
+            <div class="payment-field">
+              <label for="manual-amount">Importe a pagar (S/)</label>
+              <input type="text"
+                     id="manual-amount"
+                     name="manualAmount"
+                     inputmode="decimal"
+                     autocomplete="off"
+                     placeholder="0.00"
+                     aria-describedby="manual-amount-hint manual-amount-error">
+              <p class="payment-field__hint" id="manual-amount-hint">
+                Debe ser mayor a S/ 0.00 y coincidir exactamente con el total de la reserva.
+              </p>
+              <span class="payment-field__error" id="manual-amount-error" role="alert"></span>
+            </div>
+          </div>
+
+          <div class="payment-actions">
+            <button type="submit" class="payment-btn payment-btn--primary" id="submit-payment-btn">
+              <span class="payment-btn__label" id="submit-payment-label">Pagar ahora</span>
+              <span class="payment-btn__spinner" id="submit-payment-spinner" hidden>Procesando pago...</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <aside class="payment-summary" aria-label="Resumen de compra">
+        <div class="summary-box">
+          <h2>Resumen de compra</h2>
+
+          <div class="summary-movie">
+            <img id="summary-poster"
+                 class="summary-movie__poster"
+                 th:src="@{${booking.showtime.movie.posterUrl}}"
+                 th:alt="'Póster de ' + ${booking.showtime.movie.title}">
+            <div class="summary-movie__details">
+              <h3 id="summary-movie-title" th:text="${booking.showtime.movie.title}">Película</h3>
+              <p class="summary-movie__meta">
+                <span id="summary-genre" th:text="${booking.showtime.movie.genre}">Género</span>
+                <span id="summary-duration" th:text="' · ' + ${booking.showtime.movie.durationMinutes} + ' min'">· 118 min</span>
+              </p>
+              <p class="summary-movie__format">
+                <span class="format-pill" id="summary-format">2D</span>
+              </p>
+            </div>
+          </div>
+
+          <dl class="summary-list">
+            <div class="summary-list__row">
+              <dt>Fecha de función</dt>
+              <dd id="summary-date" th:text="${#temporals.format(booking.showtime.startsAt, 'dd/MM/yyyy')}">--/--/----</dd>
+            </div>
+
+            <div class="summary-list__row">
+              <dt>Hora</dt>
+              <dd id="summary-time" th:text="${#temporals.format(booking.showtime.startsAt, 'HH:mm')}">--:--</dd>
+            </div>
+
+            <div class="summary-list__row">
+              <dt>Sala</dt>
+              <dd id="summary-room" th:text="${booking.showtime.room.name}">Sala</dd>
+            </div>
+
+            <div class="summary-list__row">
+              <dt>Asientos</dt>
+              <dd id="summary-seats" class="is-accent" th:text="${#strings.listJoin(seatLabels, ', ')}">Sin asientos</dd>
+            </div>
+
+            <div class="summary-list__row">
+              <dt>Cantidad de entradas</dt>
+              <dd id="summary-quantity" th:text="${ticketCount}">0</dd>
+            </div>
+
+            <div class="summary-list__row">
+              <dt>Precio unitario</dt>
+              <dd id="summary-unit-price" th:text="'S/ ' + ${#numbers.formatDecimal(booking.showtime.price, 1, 2)}">S/ 0.00</dd>
+            </div>
+          </dl>
+
+          <div class="summary-total">
+            <span>Monto total</span>
+            <strong id="summary-total" th:text="'S/ ' + ${#numbers.formatDecimal(booking.total, 1, 2)}">S/ 0.00</strong>
+          </div>
+
+          <p class="summary-footnote">
+            Reserva sujeta al tiempo restante indicado. Al confirmar el pago pasarás al comprobante digital.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <div th:replace="~{fragments/common :: footer}"></div>
+  <script th:src="@{/js/payment.js}"></script>
+</body>
+</html>

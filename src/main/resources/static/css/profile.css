@@ -468,5 +468,14 @@
 	    }
 	}
 
+.profile-card__header--split {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
 
+.profile-card__header--split .history-status {
+    flex-shrink: 0;
+    white-space: nowrap;
 }
