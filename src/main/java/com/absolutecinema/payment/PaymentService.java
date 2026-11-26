@@ -4,8 +4,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.absolutecinema.booking.Booking;
 import com.absolutecinema.booking.BookingRepository;
@@ -18,130 +20,77 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
     private final BookingService bookingService;
+    private final CardValidator cardValidator;
 
-    public PaymentService(
-            PaymentRepository paymentRepository,
-            BookingRepository bookingRepository,
-            BookingService bookingService) {
-
+    public PaymentService(PaymentRepository paymentRepository,
+                          BookingRepository bookingRepository,
+                          BookingService bookingService,
+                          CardValidator cardValidator) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.bookingService = bookingService;
+        this.cardValidator = cardValidator;
     }
 
-    public Payment registerPayment(
-            Long bookingId,
-            PaymentMethod method,
-            BigDecimal amount) {
-        return registerPayment(bookingId, method, amount, null);
-    }
-
-    // Registrar un nuevo pago
+    /**
+     * Procesa el pago y confirma la reserva en la misma transacción.
+     * - IllegalArgumentException: datos de pago inválidos (se rechaza, la reserva sigue PENDING).
+     * - IllegalStateException: reserva vencida o ya no pendiente.
+     */
     @Transactional
-    public Payment registerPayment(
-            Long bookingId,
-            PaymentMethod method,
-            BigDecimal amount,
-            String cardBrand) {
-
-        // Validar ID de reserva
+    public Payment pay(Long bookingId, PaymentRequest request) {
         if (bookingId == null) {
-            throw new IllegalArgumentException(
-                "El ID de la reserva es obligatorio");
+            throw new IllegalArgumentException("El ID de la reserva es obligatorio");
+        }
+        if (request == null || request.getMethod() == null) {
+            throw new IllegalArgumentException("El método de pago es obligatorio");
         }
 
-        // Buscar reserva
-        Booking booking = bookingRepository.findById(bookingId)
-            .orElseThrow(() ->
-                new IllegalArgumentException(
-                    "Reserva no encontrada"));
+        // Se bloquea la reserva desde el inicio: evita doble pago por doble envío
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reserva no encontrada"));
 
-        // Verificar estado de reserva
         if (booking.getStatus() != BookingStatus.PENDING) {
-            throw new IllegalArgumentException(
-                "La reserva no está pendiente");
+            throw new IllegalStateException("La reserva no está pendiente");
+        }
+        if (booking.getExpiresAt() == null || !LocalDateTime.now().isBefore(booking.getExpiresAt())) {
+            throw new IllegalStateException("La reserva ha vencido");
         }
 
-        // Verificar vencimiento
-        if (booking.getExpiresAt() == null ||
-            !LocalDateTime.now().isBefore(booking.getExpiresAt())) {
+        BigDecimal amount;
+        String brand = null;
 
-            throw new IllegalArgumentException(
-                "La reserva ha vencido");
+        if (request.getMethod() == PaymentMethod.MANUAL_AMOUNT) {
+            amount = request.getAmount();                                   // RN-12
+            if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("El importe debe ser mayor que cero");
+            }
+            if (booking.getTotal() == null || amount.compareTo(booking.getTotal()) != 0) {
+                throw new IllegalArgumentException("El importe no coincide con el total de la reserva");
+            }
+        } else {
+            brand = cardValidator.validate(request);                        // RN-17
+            amount = booking.getTotal();                                    // el importe lo define el servidor
         }
 
-        // Validar método de pago
-        if (method == null) {
-            throw new IllegalArgumentException(
-                "El método de pago es obligatorio");
+        if (!paymentRepository.findByBookingId(bookingId).isEmpty()) {
+            throw new IllegalArgumentException("Esta reserva ya tiene un pago registrado");
         }
 
-        // Validar importe
-        if (amount == null ||
-            amount.compareTo(BigDecimal.ZERO) <= 0) {
+        // Asientos LOCKED -> SOLD y reserva CONFIRMED (si falla, no se guarda el pago)
+        Booking confirmed = bookingService.confirm(bookingId);
 
-            throw new IllegalArgumentException(
-                "El importe debe ser mayor que cero");
-        }
-
-        // Comprobar que el importe coincida con la reserva
-        if (booking.getTotal() == null ||
-            amount.compareTo(booking.getTotal()) != 0) {
-
-            throw new IllegalArgumentException(
-                "El importe no coincide con el total de la reserva");
-        }
-
-        // Evitar pagos duplicados
-        List<Payment> existingPayments =
-                paymentRepository.findByBookingId(bookingId);
-
-        if (!existingPayments.isEmpty()) {
-            throw new IllegalArgumentException(
-                "Esta reserva ya tiene un pago registrado");
-        }
-
-        // Confirmar la reserva y pasar los asientos LOCKED a SOLD
-        Booking confirmedBooking = bookingService.confirm(bookingId);
-
-        // Crear el registro del pago
         Payment payment = new Payment();
-
-        payment.setBooking(confirmedBooking);
-        payment.setMethod(method);
+        payment.setBooking(confirmed);
+        payment.setMethod(request.getMethod());
         payment.setAmount(amount);
         payment.setStatus(PaymentStatus.APPROVED);
+        payment.setCardBrand(brand);                                        // "VISA" / "AMEX" o null
         payment.setCreatedAt(LocalDateTime.now());
-
-        if (method == PaymentMethod.CARD && cardBrand != null) {
-            String normalizedBrand = cardBrand.trim().toUpperCase();
-            if ("VISA".equals(normalizedBrand) || "AMEX".equals(normalizedBrand)) {
-                payment.setCardBrand("AMEX".equals(normalizedBrand) ? "American Express" : "Visa");
-            }
-        }
-
-        // Guardar el pago
         return paymentRepository.save(payment);
     }
 
-    // Buscar pago por identificador
-    public Payment findById(Long id) {
-
-        return paymentRepository.findById(id)
-            .orElseThrow(() ->
-                new IllegalArgumentException(
-                    "Pago no encontrado"));
-    }
-
-    // Consultar pagos de una reserva
     public List<Payment> findByBooking(Long bookingId) {
-
         return paymentRepository.findByBookingId(bookingId);
-    }
-
-    // Listar todos los pagos
-    public List<Payment> findAll() {
-
-        return paymentRepository.findAll();
     }
 }

@@ -4,12 +4,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const WARNING_THRESHOLD_SECONDS = 60;
 
+  const secondsLeftAttr = Number.parseInt(app.dataset.secondsLeft, 10);
   // Estado en memoria (nunca se persiste DNI, número ni CVV)
   const state = {
     bookingId: parsePositiveInt(app.dataset.bookingId),
     bookingStatus: (app.dataset.bookingStatus || "PENDING").toUpperCase(),
     total: parseDecimal(app.dataset.total),
-    expiresAtMs: parseDateTimeMs(app.dataset.expiresAt),
+    expiresAtMs: Number.isFinite(secondsLeftAttr) ? Date.now() + secondsLeftAttr * 1000 : parseDateTimeMs(app.dataset.expiresAt),
     method: getSelectedMethodValue(),
     isExpired: false,
     isSubmitting: false,
@@ -494,7 +495,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateCardBrandUI();
   }
 
-  // ---------- Envío al backend (POST /payments) ----------
+  // ---------- Envío al backend (POST /bookings/{id}/payment) ----------
   async function handleSubmit(event) {
     event.preventDefault();
     if (state.isSubmitting || state.isApproved) return;
@@ -516,21 +517,17 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const amountToSend = state.method === "MANUAL_AMOUNT"
-      ? Number(manualAmountInput.value.trim())
-      : state.total;
-
-    const detectedBrand = state.method === "CARD"
-      ? detectCardBrand(cardNumberInput.value.replace(/\D/g, ""))
-      : null;
-
-    // Nunca se envía DNI, número de tarjeta ni CVV al backend
-    const payload = {
-      bookingId: state.bookingId,
-      method: state.method,
-      amount: amountToSend,
-      cardBrand: detectedBrand === "VISA" || detectedBrand === "AMEX" ? detectedBrand : null
-    };
+    // Los datos de tarjeta se envían solo para que el servidor los valide; no se guardan
+    const payload = { method: state.method };
+    if (state.method === "MANUAL_AMOUNT") {
+      payload.amount = Number(manualAmountInput.value.trim());
+    } else {
+      payload.cardHolder = cardHolderInput.value.trim();
+      payload.dni = cardDniInput.value;
+      payload.cardNumber = cardNumberInput.value.replace(/\D/g, "");
+      payload.expiry = cardExpiryInput.value.trim();
+      payload.cvv = cardCvvInput.value;
+    }
 
     const headers = {
       "Content-Type": "application/json",
@@ -542,62 +539,52 @@ document.addEventListener("DOMContentLoaded", () => {
       headers[csrfHeader] = csrfToken;
     }
 
+    const confirmUrl = app.dataset.confirmationUrl || `/bookings/${state.bookingId}/confirmation`;
+
     state.isSubmitting = true;
     clearResultAlert();
     syncFormAvailability();
 
     try {
-      const response = await fetch("/payments", {
+      const response = await fetch(`/bookings/${state.bookingId}/payment`, {
         method: "POST",
         headers,
         body: JSON.stringify(payload)
       });
 
-      const contentType = response.headers.get("content-type") || "";
       let data = null;
-      if (contentType.includes("application/json")) {
-        data = await response.json().catch(() => null);
-      } else {
-        const text = await response.text().catch(() => "");
-        if (text) {
-          try {
-            data = JSON.parse(text);
-          } catch {
-            data = { message: text };
-          }
-        }
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
       }
 
       if (!response.ok) {
-        const backendMsg = (data && (data.message || data.reason || data.error)) || "";
-        const normalizedMsg = String(backendMsg).toLowerCase();
+        const code = data && data.code;
+        const backendMsg = (data && data.message) || "";
 
-        if (normalizedMsg.includes("vencid") || normalizedMsg.includes("expir")) {
+        if (code === "PAID") {
+          state.isApproved = true;
+          window.location.assign(confirmUrl);
+          return;
+        }
+        if (code === "EXPIRED") {
           markBookingExpired(backendMsg || "La reserva ha vencido.");
           return;
         }
-
         if (response.status === 404) {
-          showRejectedPayment(backendMsg || "No se encontró la reserva asociada al pago.");
+          showRejectedPayment("No se encontró la reserva asociada al pago.");
           return;
         }
-
         if (response.status === 400) {
-          showRejectedPayment(backendMsg || "El pago fue rechazado. Revisa el importe y la vigencia de la reserva.");
+          showRejectedPayment(backendMsg || "El pago fue rechazado. Revisa los datos e intenta nuevamente.");
           return;
         }
-
         if (response.status >= 500) {
           showRejectedPayment("Ocurrió un inconveniente temporal en el servidor. Intenta nuevamente en unos segundos.");
           return;
         }
-
         showRejectedPayment(backendMsg || "No se pudo completar el pago.");
-        return;
-      }
-
-      if (data && String(data.status).toUpperCase() === "REJECTED") {
-        showRejectedPayment(data.rejectionReason || data.message || "El pago fue rechazado por el sistema.");
         return;
       }
 
@@ -605,8 +592,6 @@ document.addEventListener("DOMContentLoaded", () => {
       clearSensitiveCardData();
       successBox.hidden = false;
       successMessage.textContent = "Pago aprobado correctamente. Redirigiendo a la confirmación...";
-
-      const confirmUrl = app.dataset.confirmationUrl || `/bookings/${state.bookingId}/confirmation`;
       window.setTimeout(() => {
         window.location.assign(confirmUrl);
       }, 500);
@@ -620,7 +605,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   }
-
+  
   // ---------- Listeners ----------
   methodRadios.forEach(radio => {
     radio.addEventListener("change", () => {

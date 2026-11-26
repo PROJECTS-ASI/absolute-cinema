@@ -1,5 +1,5 @@
-
 package com.absolutecinema.profile;
+
 
 import java.util.Comparator;
 import java.util.List;
@@ -18,6 +18,7 @@ import com.absolutecinema.booking.ShowtimeSeat;
 import com.absolutecinema.booking.ShowtimeSeatRepository;
 import com.absolutecinema.payment.Payment;
 import com.absolutecinema.payment.PaymentRepository;
+import com.absolutecinema.booking.BookingStatus;
 
 @Service
 public class ProfileService {
@@ -85,6 +86,7 @@ public class ProfileService {
                 bookingRepository.findByUserOrderByCreatedAtDesc(user);
 
         return bookings.stream()
+        		.filter(booking -> booking.getStatus() == BookingStatus.CONFIRMED)
                 .map(booking -> {
 
                     List<ShowtimeSeat> seats =
@@ -135,7 +137,8 @@ public class ProfileService {
 
         Booking booking = bookingRepository.findById(bookingId)
                 .filter(foundBooking ->
-                        foundBooking.getUser().getId().equals(user.getId()))
+                        foundBooking.getUser().getId().equals(user.getId())
+                        && foundBooking.getStatus() == BookingStatus.CONFIRMED)
                 .orElseThrow(() ->
                         new ResponseStatusException(HttpStatus.NOT_FOUND));
 

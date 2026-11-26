@@ -5,6 +5,7 @@
   <div th:replace="~{fragments/common :: mainHeader('catalog')}"></div>
 
   <main class="catalog">
+	<div class="alert alert--error" role="alert" th:if="${notice}" th:text="${notice}"></div>
     <p class="catalog__crumb">AbsoluteCinema CINE / CARTELERA</p>
 
     <div class="catalog__top">

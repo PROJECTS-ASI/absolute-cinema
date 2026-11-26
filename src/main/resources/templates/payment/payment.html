@@ -11,6 +11,7 @@
                  data-booking-status=${booking.status.name()},
                  data-total=${booking.total},
                  data-expires-at=${booking.expiresAt},
+				 data-seconds-left=${secondsLeft},
                  data-movie-title=${booking.showtime.movie.title},
                  data-poster-url=${booking.showtime.movie.posterUrl},
                  data-genre=${booking.showtime.movie.genre},
@@ -92,7 +93,7 @@
         <div class="payment-card payment-sim-notice">
           <span class="payment-sim-notice__badge">SIMULACIÓN ACADÉMICA</span>
           <p>
-            No se realizan cobros reales. Los datos ingresados en tarjetas de prueba solo se validan en el navegador y no se almacenan ni se envían al servidor.
+            No se realizan cobros reales. Los datos de la tarjeta de prueba se envían solo para validarlos y no se almacenan.
           </p>
         </div>
 
@@ -199,7 +200,6 @@
           <div class="payment-panel" id="manual-method-panel" hidden>
             <div class="payment-panel__header">
               <h3>Pago por importe manual</h3>
-              <span class="payment-panel__tag">Regla RN-12</span>
             </div>
 
             <div class="payment-field">
